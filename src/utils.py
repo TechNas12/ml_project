@@ -48,6 +48,38 @@ def save_object(file_path, obj):
     except Exception as e:
         raise CustomException(e,sys)
     
+def load_object(file_path):
+    """
+    Load and deserialize a Python object from a file using dill.
+
+    This function reads a binary file containing a serialized Python
+    object and reconstructs the object in memory using the dill library.
+    It is commonly used in machine learning pipelines to load saved
+    models, preprocessors, or other serialized artifacts.
+
+    Parameters
+    ----------
+    file_path : str
+        The path to the file containing the serialized object.
+
+    Returns
+    -------
+    object
+        The deserialized Python object loaded from the file.
+
+    Raises
+    ------
+    CustomException
+        If an error occurs while opening the file or during the
+        deserialization process.
+    """
+    try:
+        with open(file_path, 'rb') as file_obj:
+            load_file = dill.load(file_obj)
+            logging.info(f"Loaded the object: {file_path}")
+            return load_file
+    except Exception as e:
+        raise CustomException(e,sys)
 
 # Model Utils 
 
