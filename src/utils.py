@@ -3,6 +3,9 @@ import numpy as np, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from src.exception import CustomException
 from src.logger import logging
+import warnings
+from sklearn.model_selection import RandomizedSearchCV
+warnings.filterwarnings("ignore")
 
 def save_object(file_path, obj):
 
@@ -56,7 +59,7 @@ def save_model_report(report, file_path='artifacts/model_report.json'):
     try:
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, 'w') as f:
-            json.dump(report, f, indent=4)
+            json.dump(report, f, indent=4,default=float)
     
     except Exception as e:
         raise CustomException(e,sys)
@@ -150,78 +153,139 @@ def save_model_report_visualisation(model_report,file_path='artifacts/model_comp
         raise CustomException(e, sys)
 
 
-def evaluate_model(X_train, y_train, X_test, y_test, models, metrics, save_report=True, save_graph=True):
+def evaluate_model(X_train, y_train, X_test, y_test, models, metrics, params,save_report=True, save_graph=True):
     """
-    Train multiple machine learning models and evaluate them using provided metrics.
+        Perform hyperparameter tuning, training, and evaluation for multiple regression models.
 
-    This function fits each model on the training data, generates predictions for both
-    training and test datasets, and computes evaluation metrics for each model. The
-    results are organized into a structured report dictionary.
+        This function iterates over a collection of machine learning models, performs
+        hyperparameter optimization using RandomizedSearchCV, trains each model with
+        the best discovered configuration, and evaluates the trained models on both
+        training and test datasets using the provided evaluation metrics.
 
-    Parameters
-    ----------
-    X_train : array-like or pandas.DataFrame
-        Training feature dataset used to fit the models.
+        During execution, the function logs the hyperparameter search process,
+        including the best estimator, best parameter set, and best cross-validation
+        score for each model.
 
-    y_train : array-like or pandas.Series
-        Target values corresponding to the training dataset.
+        Evaluation results are aggregated into a structured report dictionary
+        containing both train and test scores for every metric. Optionally, the
+        function can also persist the evaluation report as a JSON file and generate
+        a visualization comparing model performance.
 
-    X_test : array-like or pandas.DataFrame
-        Testing feature dataset used for evaluating model performance.
+        ## Parameters
 
-    y_test : array-like or pandas.Series
-        True target values for the testing dataset.
+        X_train : array-like or pandas.DataFrame
+        Feature matrix used for training the models.
 
-    models : dict
-        Dictionary containing model names as keys and instantiated machine learning
-        model objects as values.
+        y_train : array-like or pandas.Series
+        Target vector corresponding to the training data.
 
-        Example:
+        X_test : array-like or pandas.DataFrame
+        Feature matrix used for evaluating model performance.
+
+        y_test : array-like or pandas.Series
+        Target vector corresponding to the test dataset.
+
+        models : dict[str, estimator]
+        Dictionary mapping model names to instantiated regression estimators.
+
+        ```
+        Example
+        -------
         {
             "Linear Regression": LinearRegression(),
             "Random Forest": RandomForestRegressor()
         }
+        ```
 
-    metrics : dict
-        Dictionary containing metric names as keys and metric functions as values.
+        metrics : dict[str, callable]
+        Dictionary mapping metric names to evaluation functions.
 
-        Example:
+        ```
+        Example
+        -------
         {
-            "Mean Squared Error": mean_squared_error,
-            "R2 Score": r2_score
+            "R2 Score": r2_score,
+            "Mean Absolute Error": mean_absolute_error
         }
+        ```
 
-    report : bool
-        Boolean Value to determine wheter report in form of JSON to be saved in the artifacts folder.
+        params : dict[str, dict]
+        Dictionary mapping model names to hyperparameter distributions used
+        during randomized hyperparameter search.
 
-    graph : bool
-        Boolean Value to determine wheter rcomparison graph derived from the reports should be saved in artifacts folder or not.    
-
-    Returns
-    -------
-    dict
-        A nested dictionary containing evaluation results for each model.
-
-        Structure:
+        ```
+        Example
+        -------
         {
-            "Model Name": {
-                "Metric Name": [train_score, test_score]
+            "Random Forest": {
+                "n_estimators": [100, 200],
+                "max_depth": [5, 10]
             }
         }
+        ```
 
-    Raises
-    ------
-    CustomException
-        If any error occurs during model training or evaluation.
+        save_report : bool, default=True
+        Whether to save the evaluation report as a JSON artifact.
+
+        save_graph : bool, default=True
+        Whether to generate and save a visualization comparing model
+        performance using the R² metric.
+
+        ## Returns
+
+        tuple(dict, dict)
+        report : dict
+        Nested dictionary containing evaluation results for each model.
+
+        ```
+            Structure
+            ---------
+            {
+                "Model Name": {
+                    "Metric Name": [train_score, test_score]
+                }
+            }
+
+        trained_models : dict
+            Dictionary mapping model names to their trained best estimators.
+        ```
+
+        ## Raises
+
+        CustomException
+        Raised if an error occurs during hyperparameter tuning, model
+        training, evaluation, or artifact generation.
     """
+
     try:
         report = {}
         trained_models = {}
         for model_name, model in models.items():
 
-            logging.info(f"Training model: {model_name}")
+            logging.info(f"Hyperparameter Tuning with model: {model_name}")
 
-            model.fit(X_train, y_train)
+            hpt_model = RandomizedSearchCV(
+                model,
+                param_distributions=params[model_name],
+                cv=5,
+                verbose=0,
+                n_jobs=-1,
+                random_state=69,
+                n_iter=25,
+                scoring='r2'
+            )
+
+            hpt_model.fit(X_train,y_train)
+
+            logging.info(f"Hyperparameter tuning completed with estimator: {hpt_model.best_estimator_}")
+
+            logging.info(f"Training the actual model with best Params || Estimator: {hpt_model.best_estimator_} | Best Params: {hpt_model.best_params_}")
+
+            model = hpt_model.best_estimator_
+
+            logging.info(f"Best estimator: {hpt_model.best_estimator_}")
+            logging.info(f"Best parameters: {hpt_model.best_params_}")
+            logging.info(f"Best CV score: {hpt_model.best_score_}")
 
             y_train_pred = model.predict(X_train)
             y_test_pred = model.predict(X_test)

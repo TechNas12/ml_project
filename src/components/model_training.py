@@ -130,6 +130,74 @@ class ModelTrainer:
                 "Root Mean Squared Error": root_mean_squared_error
             }
 
+            #ParamGrids
+            params = {
+
+                "Random Forest": {
+                    "n_estimators": [50,100,200,300],
+                    "max_depth": [None,5,10,20,30],
+                    "min_samples_split": [2,5,10],
+                    "min_samples_leaf": [1,2,4],
+                    "max_features": ["sqrt","log2",None],
+                    "bootstrap": [True, False]
+                },
+
+                "Descision Tree": {
+                    "criterion": ["squared_error","friedman_mse","absolute_error","poisson"],
+                    "splitter": ["best","random"],
+                    "max_depth": [None,5,10,20,30],
+                    "min_samples_split": [2,5,10],
+                    "min_samples_leaf": [1,2,4],
+                    "max_features": ["sqrt","log2",None]
+                },
+
+                "Gradient Boosting": {
+                    "n_estimators": [50,100,200],
+                    "learning_rate": [0.1,0.05,0.01],
+                    "subsample": [0.6,0.7,0.8,0.9],
+                    "max_depth": [3,5,7],
+                    "min_samples_split": [2,5],
+                    "min_samples_leaf": [1,2],
+                    "max_features": ["sqrt","log2",None]
+                },
+
+                "Linear Regression": {},
+
+                "KNeighbours Regressor": {
+                    "n_neighbors": [3,5,7,9,11],
+                    "weights": ["uniform","distance"],
+                    "algorithm": ["auto","ball_tree","kd_tree","brute"],
+                    "leaf_size": [20,30,40],
+                    "p": [1,2]
+                },
+
+                "XG Boost": {
+                    "n_estimators": [50,100,200],
+                    "learning_rate": [0.1,0.05,0.01],
+                    "max_depth": [3,5,7],
+                    "subsample": [0.7,0.8,0.9],
+                    "colsample_bytree": [0.7,0.8,0.9],
+                    "gamma": [0,0.1,0.2],
+                    "reg_alpha": [0,0.1,1],
+                    "reg_lambda": [1,1.5,2]
+                },
+
+                "CatBoost Regressor": {
+                    "depth": [6,8,10],
+                    "learning_rate": [0.01,0.05,0.1],
+                    "iterations": [100,200,300],
+                    "l2_leaf_reg": [1,3,5,7],
+                    "border_count": [32,64,128],
+                },
+
+                "AdaBoost Regressor": {
+                    "n_estimators": [50,100,200],
+                    "learning_rate": [1,0.1,0.05,0.01],
+                    "loss": ["linear","square","exponential"]
+                }
+
+            }
+
             logging.info("Started model evaluation ...")
 
             model_report, trained_models = evaluate_model(X_train = X_train, 
@@ -137,7 +205,8 @@ class ModelTrainer:
                                           X_test = X_test, 
                                           y_test =y_test,
                                           models=models,
-                                          metrics=metrics)
+                                          metrics=metrics,
+                                          params=params)
             
             best_model_name = max(
                 model_report,
