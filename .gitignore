@@ -8,15 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
-
-.artifact
-.logs
-artifacts/preproccesor.pkl
+artifacts/
+logs/
 .gitignore
-logs/03_13_2026_22_53_04.log
-logs/03_13_2026_22_53_55.log
-logs/03_13_2026_22_59_10.log
-logs/03_13_2026_23_20_06.log
-logs/03_13_2026_23_22_54.log
-logs/03_13_2026_23_23_23.log
-logs/03_13_2026_23_26_43.log
+notebook/catboost_info/
+catboost_info/
