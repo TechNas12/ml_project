@@ -9,5 +9,5 @@ wheels/
 # Virtual environments
 .venv
 .gitignore
-notebook/catboost_info/
-catboost_info/
+notebook/
+notebook/
