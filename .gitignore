@@ -8,8 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
-artifacts/
-logs/
 .gitignore
 notebook/catboost_info/
 catboost_info/
